@@ -5,9 +5,7 @@ class AppController {
   static getStatus(req, res) {
     const redisOnline = redisClient.isAlive();
     const dbOnline = dbClient.isAlive();
-    if (redisOnline && dbOnline) {
-      res.status(200).json({ redis: true, db: true });
-    }
+    res.status(200).json({ redis: redisOnline, db: dbOnline });
   }
 
   static async getStats(req, res) {
