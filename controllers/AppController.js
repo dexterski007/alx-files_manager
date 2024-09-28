@@ -1,5 +1,5 @@
-const redisClient = require('../utils/redis');
-const dbClient = require('../utils/db');
+import dbClient from '../utils/db';
+import redisClient from '../utils/redis';
 
 class AppController {
   static getStatus(req, res) {
@@ -9,14 +9,10 @@ class AppController {
   }
 
   static async getStats(req, res) {
-    try {
-      const users = await dbClient.nbUsers();
-      const files = await dbClient.nbFiles();
-      res.status(200).json({ users: `${users}`, files: `${files}` });
-    } catch (error) {
-      console.error(error);
-    }
+    const users = await dbClient.nbUsers();
+    const files = await dbClient.nbFiles();
+    res.status(200).json({ users: `${users}`, files: `${files}` });
   }
 }
 
-module.exports = AppController;
+export default AppController;
