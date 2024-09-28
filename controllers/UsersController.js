@@ -21,7 +21,7 @@ class UserController {
     const reply = await dbClient.dbClient.collection('users').insertOne({ email, password: hashed });
     const userId = reply.insertedId.toString();
     uQueue.add({ userId });
-    return res.status(201).json({ id: userId, email });
+    return res.status(201).json({ email, id: userId });
   }
 }
 
