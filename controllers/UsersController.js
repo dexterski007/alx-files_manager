@@ -1,6 +1,8 @@
 import sha1 from 'sha1';
 import Queue from 'bull/lib/queue';
+import ObjectId from 'mongodb';
 import dbClient from '../utils/db';
+import redisClient from '../utils/redis';
 
 const uQueue = new Queue('userController');
 
@@ -22,6 +24,20 @@ class UserController {
     const userIdres = reply.insertedId;
     uQueue.add({ userId: userIdres });
     return res.status(201).json({ id: userIdres, email });
+  }
+
+  static async getMe(req, res) {
+    const token = req.header('X-Token');
+    const reply = await redisClient.get(`auth_${token}`);
+    if (!reply) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const objId = new ObjectId(reply);
+    const user = await dbClient.dbClient.collection('users').findOne({ _id: objId });
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    return res.status(200).json({ id: reply, email: user.email });
   }
 }
 
