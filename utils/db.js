@@ -12,10 +12,10 @@ class DBClient {
         this.dbClient = client.db(database);
       })
       .catch((error) => {
-        console.error(error)
+        console.error(error);
         this.dbClient = false;
-      })
-    }
+      });
+  }
 
   isAlive() {
     return !!this.dbClient;
