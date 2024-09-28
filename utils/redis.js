@@ -1,4 +1,4 @@
-const redis = require('redis');
+import redis from 'redis';
 
 class RedisClient {
   constructor() {
@@ -14,11 +14,11 @@ class RedisClient {
 
   async get(key) {
     return new Promise((resolve, reject) => {
-      this.client.get(key, (err, res) => {
-        if (err) {
-          reject(err);
+      this.client.get(key, (error, reply) => {
+        if (error) {
+          reject(error);
         } else {
-          resolve(res);
+          resolve(reply);
         }
       });
     });
@@ -26,11 +26,11 @@ class RedisClient {
 
   async set(key, value, duration) {
     return new Promise((resolve, reject) => {
-      this.client.setEx(key, duration, value, (err, res) => {
-        if (err) {
-          reject(err);
+      this.client.setex(key, duration, value, (error, reply) => {
+        if (error) {
+          reject(error);
         } else {
-          resolve(res);
+          resolve(reply);
         }
       });
     });
@@ -39,8 +39,8 @@ class RedisClient {
   async del(key) {
     // eslint-disable-next-line no-unused-vars
     return new Promise((resolve, _reject) => {
-      this.client.del(key, (err) => {
-        if (err) {
+      this.client.del(key, (error) => {
+        if (error) {
           resolve(false);
         } else {
           resolve(true);
@@ -51,4 +51,4 @@ class RedisClient {
 }
 
 const redisClient = new RedisClient();
-module.exports = redisClient;
+export default redisClient;
