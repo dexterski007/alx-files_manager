@@ -11,16 +11,20 @@ class RedisClient {
     this.setAsync = promisify(this.client.set).bind(this.client);
     this.delAsync = promisify(this.client.del).bind(this.client);
   }
+
   isAlive() {
     return this.client.connected;
   }
+
   async get(key) {
     const result = await this.getAsync(key);
     return result;
   }
+
   async set(key, value, duration) {
     await this.setAsync(key, value, 'EX', duration);
   }
+
   async del(key) {
     await this.delAsync(key);
   }
