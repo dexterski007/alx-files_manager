@@ -13,15 +13,15 @@ class UserController {
     if (!password) {
       return res.status(400).json({ error: 'Missing password' });
     }
-    const userCheck = dbClient.dbClient.collection('users').findOne({ email });
+    const userCheck = await dbClient.dbClient.collection('users').findOne({ email });
     if (userCheck) {
       return res.status(400).json({ error: 'Already exist' });
     }
     const hashed = sha1(password);
     const reply = await dbClient.dbClient.collection('users').insertOne({ email, password: hashed });
-    const userId = reply.insertedId.toString();
-    uQueue.add({ userId });
-    return res.status(201).json({ email, id: userId });
+    const userIdres = reply.insertedId;
+    uQueue.add({ userId: userIdres });
+    return res.status(201).json({ id: userIdres, email });
   }
 }
 
