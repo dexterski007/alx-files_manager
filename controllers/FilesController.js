@@ -110,109 +110,50 @@ class FilesController {
   }
 
   static async getShow(req, res) {
-    async function getIdKey(req) {
-      const userInfo = { userId: null, key: null };
+    const token = req.header('X-Token');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-      const token = req.header('X-Token');
-      if (!token) return userInfo;
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-      userInfo.key = `auth_${token}`;
-      userInfo.userId = await redisClient.get(userInfo.key);
+    const fileId = req.params.id;
+    const file = await dbClient.dbClient.collection('files').findOne({ _id: ObjectId(fileId), userId: ObjectId(userId) });
 
-      return userInfo;
-    }
+    if (!file) return res.status(404).json({ error: 'Not found' });
 
-    const { userId } = await getIdKey(req);
-
-    function isValidUser(id) {
-      try {
-        ObjectId(id);
-      } catch (error) {
-        return false;
-      }
-      return true;
-    }
-
-    if (!isValidUser(userId)) return res.status(401).send({ error: 'Unauthorized' });
-
-    const user = await dbClient.users.findOne({ _id: ObjectId(userId) });
-    if (!user) return res.status(401).send({ error: 'Unauthorized' });
-
-    const argId = req.params.id || '';
-    const file = await dbClient.users.findOne({ _id: ObjectId(argId), userId: user._id });
-    if (!file) return res.status(404).send({ error: 'Not found' });
-
-    return res.status(200).send({
-      id: file._id,
-      userId: file.userId,
-      name: file.name,
-      type: file.type,
-      isPublic: file.isPublic,
-      parentId: file.parentId,
-    });
+    return res.json(file);
   }
 
   static async getIndex(req, res) {
-    async function getIdKey(req) {
-      const userInfo = { userId: null, key: null };
+    const token = req.header('X-Token');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-      const token = req.header('X-Token');
-      if (!token) return userInfo;
+    const userIdString = await redisClient.get(`auth_${token}`);
 
-      userInfo.key = `auth_${token}`;
-      userInfo.userId = await redisClient.get(userInfo.key);
+    if (!userIdString) return res.status(401).json({ error: 'Unauthorized' });
 
-      return userInfo;
-    }
+    const parentId = req.query.parentId ? ObjectId(req.query.parentId) : '0';
+    const userId = ObjectId(userIdString);
+    const filesCount = await dbClient.dbClient.collection('files')
+      .countDocuments({ userId, parentId });
 
-    const { userId } = await getIdKey(req);
+    if (filesCount === '0') return res.json([]);
 
-    function isValidUser(id) {
-      try {
-        ObjectId(id);
-      } catch (error) {
-        return false;
-      }
-      return true;
-    }
+    const skip = (parseInt(req.query.page, 10) || 0) * 20;
+    const files = await dbClient.dbClient.collection('files')
+      .aggregate([
+        { $match: { userId, parentId } },
+        { $skip: skip },
+        { $limit: 20 },
+      ]).toArray();
 
-    if (!isValidUser(userId)) return res.status(401).send({ error: 'Unauthorized' });
+    const modifyResult = files.map((file) => ({
+      ...file,
+      id: file._id,
+      _id: undefined,
+    }));
 
-    const user = await dbClient.dbClient.collection('users').findOne({ _id: ObjectId(userId) });
-    if (!user) return res.status(401).send({ error: 'Unauthorized' });
-
-    let parentId = req.query.parentId || 0;
-    if (parentId === '0') parentId = 0;
-    if (parentId !== 0) {
-      if (!isValidUser(parentId)) return res.status(401).send({ error: 'Unauthorized' });
-      parentId = ObjectId(parentId);
-
-      const folder = await dbClient.dbClient.collection('files').findOne({ _id: ObjectId(parentId) });
-      if (!folder || folder.type !== 'folder') return res.status(200).send([]);
-    }
-
-    const page = req.query.page || 0;
-
-    const addmath = { $and: [{ parentId }] };
-    let data = [{ $match: addmath }, { $skip: page * 20 }, { $limit: 20 }];
-    if (parentId === 0) data = [{ $skip: page * 20 }, { $limit: 20 }];
-
-    const pagination = await dbClient.dbClient.collection('files').aggregate(data);
-    const paginationArray = [];
-
-    await pagination.forEach((file) => {
-      const paginationItem = {
-        id: file._id,
-        userID: file.userId,
-        name: file.name,
-        type: file.type,
-        isPublic: file.isPublic,
-        parentId: file.parentId,
-      };
-      paginationArray.push(paginationItem);
-    });
-
-    return res.status(200).send(paginationArray);
+    return res.json(modifyResult);
   }
 }
 
