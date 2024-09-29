@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
-import fs from 'fs';
-import { mkdir, writeFile, readFileSync } from 'fs';
+import { mkdir, writeFile } from 'fs';
 import Queue from 'bull';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
