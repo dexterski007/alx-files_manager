@@ -1,6 +1,6 @@
 import sha1 from 'sha1';
-import Queue from 'bull/lib/queue';
-import ObjectId from 'mongodb';
+import Queue from 'bull';
+import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
@@ -27,17 +27,21 @@ class UserController {
   }
 
   static async getMe(req, res) {
-    const token = req.header('X-Token');
-    const reply = await redisClient.get(`auth_${token}`);
-    if (!reply) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const token = req.header('X-Token');
+      if (!token) return res.status(401).json({ error: 'Unauthorized' });
+      const key = `auth_${token}`;
+      const userId = await redisClient.get(key);
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const user = await dbClient.dbClient
+        .collection('users')
+        .findOne({ _id: ObjectId(userId) });
+      if (!user) return res.status(401).json({ error: 'Unauthorized-user' });
+      return res.status(200).json({ id: user._id, email: user.email });
+    } catch (err) {
+      console.error('error in getme', err);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    const objId = new ObjectId(reply);
-    const user = await dbClient.dbClient.collection('users').findOne({ _id: objId });
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    return res.status(200).json({ id: reply, email: user.email });
   }
 }
 
