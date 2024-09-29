@@ -39,24 +39,25 @@ class FilesController {
     }
 
     const fileDocument = {
-      userId: ObjectId(userId),
+      userId,
       name,
       type,
       isPublic,
-      parentId: parentId === '0' ? '0' : parentId,
+      parentId,
     };
 
     if (type === 'folder') {
-      const newFile = await dbClient.dbClient.collection('files').insertOne(fileDocument);
-      return res.status(201).json({
-        id: newFile.insertedId,
-        userId,
-        name,
-        type,
-        isPublic,
-        parentId,
+      await dbClient.dbClient.collection('files').insertOne(fileDocument);
+      return res.status(201).send({
+        id: fileDocument._id,
+        userId: fileDocument.userId,
+        name: fileDocument.name,
+        type: fileDocument.type,
+        isPublic: fileDocument.isPublic,
+        parentId: fileDocument.parentId,
       });
     }
+
     const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
     const localPath = path.join(folderPath, uuidv4());
     try {
