@@ -68,6 +68,7 @@ class FilesController {
         type,
         isPublic,
         parentId,
+        localPath,
       });
     } catch (err) {
       console.error('Cannot save file', err);
