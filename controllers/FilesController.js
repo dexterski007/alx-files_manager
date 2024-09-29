@@ -1,14 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
-// import Queue from 'bull';
-import fs from 'fs';
+import { mkdir, writeFile } from 'fs';
+import Queue from 'bull';
 import path from 'path';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
 class FilesController {
   static async postUpload(req, res) {
-    // const fileQ = new Queue('fileQ');
+    const fileQ = new Queue('fileQ');
     const validTypes = ['folder', 'file', 'image'];
     const {
       name,
@@ -60,26 +60,30 @@ class FilesController {
 
     const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
     const localPath = path.join(folderPath, uuidv4());
-    try {
-      if (!fs.existsSync(folderPath)) {
-        fs.mkdirSync(folderPath, { recursive: true });
-      }
-      const fileData = Buffer.from(data, 'base64');
-      fs.writeFileSync(localPath, fileData);
-      fileDocument.localPath = localPath;
-      const result = await dbClient.dbClient.collection('files').insertOne(fileDocument);
-      return res.status(201).json({
-        id: result.insertedId,
-        userId,
-        name,
-        type,
-        isPublic,
-        parentId,
-      });
-    } catch (err) {
-      console.error('Cannot save file', err);
-      return res.status(500).json({ error: 'cannot save the file' });
-    }
+    const fileData = Buffer.from(data, 'base64');
+    mkdir(folderPath, { recursive: true }, (err) => {
+      if (err) return res.status(400).json({ error: err.message });
+      return true;
+    });
+    writeFile(localPath, fileData, (err) => {
+      if (err) return res.status(400).json({ error: err.message });
+      return true;
+    });
+    fileDocument.localPath = localPath;
+    await dbClient.dbClient.collection('files').insertOne(fileDocument);
+
+    fileQ.add({
+      userId: fileDocument.userId,
+      fileId: fileDocument._id,
+    });
+    return res.status(201).json({
+      id: fileDocument._id,
+      userId: fileDocument.userId,
+      name: fileDocument.name,
+      type: fileDocument.type,
+      isPublic: fileDocument.isPublic,
+      parentId: fileDocument.parentId,
+    });
   }
 }
 
