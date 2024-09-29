@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
-import { mkdir, writeFile } from 'fs';
 import fs from 'fs';
 import mime from 'mime-types';
 import Queue from 'bull';
@@ -83,12 +82,12 @@ class FilesController {
     const decData = Buffer.from(fileData, 'base64');
     const filePath = `${dir}/${fileUid}`;
 
-    mkdir(dir, { recursive: true }, (error) => {
+    fs.mkdir(dir, { recursive: true }, (error) => {
       if (error) return res.status(400).json({ error: error.message });
       return true;
     });
 
-    writeFile(filePath, decData, (error) => {
+    fs.writeFile(filePath, decData, (error) => {
       if (error) return res.status(400).json({ error: error.message });
       return true;
     });
