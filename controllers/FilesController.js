@@ -8,7 +8,7 @@ import redisClient from '../utils/redis';
 
 class FilesController {
   static async postUpload(req, res) {
-    const fileQ = new Queue('fileQ');
+    const fileQueue = new Queue('fileQueue');
     const dir = process.env.FOLDER_PATH || '/tmp/files_manager';
 
     async function getIdKey(req) {
@@ -95,7 +95,7 @@ class FilesController {
     fileInsertData.localPath = filePath;
     await dbClient.dbClient.collection('files').insertOne(fileInsertData);
 
-    fileQ.add({
+    fileQueue.add({
       userId: fileInsertData.userId,
       fileId: fileInsertData._id,
     });
