@@ -188,7 +188,7 @@ class FilesController {
     const { size } = req.query;
     const userId = await redisClient.get(`auth_${token}`);
     const fileId = req.params.id;
-    const file = await dbClient.dbClient.collection('files').findOne({ _id: ObjectId(fileId), userId: ObjectId(userId) });
+    const file = await dbClient.dbClient.collection('files').findOne({ _id: ObjectId(fileId) });
     if (!file || (!file.isPublic && (!userId || userId !== file.userId.toString()))) return res.status(404).json({ error: 'Not found' });
     if (file.type === 'folder') return res.status(400).json({ error: 'A folder doesn\'t have content' });
     let { localPath } = file;
