@@ -5,6 +5,7 @@ import imageThumb from 'image-thumbnail';
 import dbClient from './utils/db';
 
 const fileQueue = new Queue('fileQueue');
+const userQueue = new Queue('userQueue');
 
 fileQueue.process(async (job) => {
   try {
@@ -14,7 +15,7 @@ fileQueue.process(async (job) => {
       throw new Error('Missing fileId');
     }
     if (!userId) {
-      throw new Error('Missing fileId');
+      throw new Error('Missing userId');
     }
     const file = await dbClient.dbClient.collection('files').findOne({ _id: ObjectId(fileId), userId: ObjectId(userId) });
     if (!file) {
@@ -29,4 +30,20 @@ fileQueue.process(async (job) => {
   }
 });
 
-module.exports = fileQueue;
+userQueue.process(async (job) => {
+  try {
+    const { userId } = job.data;
+    if (!userId) {
+      throw new Error('Missing userId');
+    }
+    const user = await dbClient.dbClient.collection('users').findOne({ _id: ObjectId(userId) });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    console.log(`Welcome ${user.email}!`);
+  } catch (err) {
+    console.error('cannot send email');
+  }
+});
+
+export { fileQueue, userQueue };
